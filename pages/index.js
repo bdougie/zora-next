@@ -1,4 +1,5 @@
 import React from 'react'
+import Card from '../components/Card.js'
 import { createClient } from 'urql'
 
 const client = createClient({
@@ -50,7 +51,8 @@ async function fetchData() {
 
 export default function Home(props) {
   if (props.tokens && props.tokens.length) return (
-    <div style={{width: 600, margin: '0 auto'}}>
+    <div className=" px-6 sm:px-4 mx-auto max-w-lg sm:max-w-2xl md:max-w-full lg:max-w-screen-2xl md:px-8 lg:px-6 lg:py-16">
+    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  ">
       {
         props.tokens.map(token => {
           return (
@@ -59,35 +61,45 @@ export default function Home(props) {
             }}>
               {
                 token.type === 'image' && (
-                  <div>
-                    <img style={{width: '600px'}} src={token.contentURI} />
-                  </div>
+                  <Card
+                    key={token.contentURI}
+                    title={token.meta.name}
+                    description={token.meta.description}>
+                    <img src={token.contentURI} alt="" className="rounded-t-xl h-96" />
+                  </Card>
                 )
               }
               {
                 token.type === 'video' && (
-                  <div>
-                    <video width="600" height="auto" controls autoPlay>
+                  <Card
+                    key={token.contentURI}
+                    title={token.meta.name}
+                    description={token.meta.description}>
+                    <video width="600" controls autoPlay>
                       <source src={token.contentURI} />
                     </video>
-                  </div>
+                  </Card>
                 )
               }
               {
                 token.type === 'audio' && (
-                  <audio controls>
-                    <source src={token.contentURI} type="audio/ogg" />
-                    <source src={token.contentURI} type="audio/mpeg" />
-                   Your browser does not support the audio element.
-                  </audio>
+                  <Card
+                    key={token.contentURI}
+                    title={token.meta.name}
+                    description={token.meta.description}>
+                    <audio controls>
+                      <source src={token.contentURI} type="audio/ogg" />
+                      <source src={token.contentURI} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                    </audio>
+                  </Card>
                 )
               }
-              <h3 style={{ margin: '8px 0px', fontSize: '22px'}}>{token.meta.name}</h3>
-              <p >{token.meta.description}</p>
             </div>
           )
         })
       }
+    </div>
     </div>
   )
   return (
