@@ -1,8 +1,95 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import React from 'react'
+import { createClient } from 'urql'
 
-export default function Home() {
+const client = createClient({
+  url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
+})
+
+const query = `
+  query {
+    tokens(
+      orderBy: createdAtTimestamp
+      orderDirection: desc
+      first: 10
+    ) {
+      id
+      tokenID
+      contentURI
+      metadataURI
+    }
+  }
+`
+
+async function fetchData() {
+  const data = await client
+    .query(query)
+    .toPromise()
+    .then(async result => {
+      const tokenData = await Promise.all(result.data.tokens.map(async token => {
+        const meta = await (await fetch(token.metadataURI)).json()
+        console.log(" meta: ", meta)
+        if (meta.mimeType === 'video/mp4') {
+          token.type = 'video'
+          token.meta = meta
+        }
+        else if (meta.body && meta.body.mimeType === 'audio/wav') {
+          token.type = 'audio'
+          token.meta = meta.body
+        }
+        else {
+          token.type = 'image'
+          token.meta = meta
+        }
+        return token
+      }))
+      return tokenData
+    })
+  return data
+}
+
+
+export default function Home(props) {
+  if (props.tokens && props.tokens.length) return (
+    <div style={{width: 600, margin: '0 auto'}}>
+      {
+        props.tokens.map(token => {
+          return (
+            <div key={token.contentURI} style={{
+              padding: '20px 0px'
+            }}>
+              {
+                token.type === 'image' && (
+                  <div>
+                    <img style={{width: '600px'}} src={token.contentURI} />
+                  </div>
+                )
+              }
+              {
+                token.type === 'video' && (
+                  <div>
+                    <video width="600" height="auto" controls autoPlay>
+                      <source src={token.contentURI} />
+                    </video>
+                  </div>
+                )
+              }
+              {
+                token.type === 'audio' && (
+                  <audio controls>
+                    <source src={token.contentURI} type="audio/ogg" />
+                    <source src={token.contentURI} type="audio/mpeg" />
+                   Your browser does not support the audio element.
+                  </audio>
+                )
+              }
+              <h3 style={{ margin: '8px 0px', fontSize: '22px'}}>{token.meta.name}</h3>
+              <p >{token.meta.description}</p>
+            </div>
+          )
+        })
+      }
+    </div>
+  )
   return (
     <div className={styles.container}>
       <Head>
@@ -15,55 +102,16 @@ export default function Home() {
         <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   )
+}
+
+export async function getServerSideProps() {
+  const data = await fetchData()
+  return {
+    props: {
+      tokens: data
+    }
+  }
 }
