@@ -1,6 +1,7 @@
 import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
+import Image from 'next/image'
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
@@ -65,7 +66,13 @@ export default function Home(props) {
                     key={token.contentURI}
                     title={token.meta.name}
                     description={token.meta.description}>
-                    <img src={token.contentURI} alt="" className="rounded-t-xl h-96" />
+                    <Image
+                      className="rounded-t-xl h-96"
+                      src={token.contentURI}
+                      alt={`nft-${token.meta.name}`}
+                      width={500}
+                      height={500}
+                    />
                   </Card>
                 )
               }
@@ -75,7 +82,7 @@ export default function Home(props) {
                     key={token.contentURI}
                     title={token.meta.name}
                     description={token.meta.description}>
-                    <video width="600" controls autoPlay>
+                    <video alt="nft-video" width="600" controls autoPlay>
                       <source src={token.contentURI} />
                     </video>
                   </Card>
@@ -87,7 +94,7 @@ export default function Home(props) {
                     key={token.contentURI}
                     title={token.meta.name}
                     description={token.meta.description}>
-                    <audio controls>
+                    <audio alt="nft-video" controls>
                       <source src={token.contentURI} type="audio/ogg" />
                       <source src={token.contentURI} type="audio/mpeg" />
                     Your browser does not support the audio element.
