@@ -14,5 +14,10 @@
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "urql": "^2.0.3"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.2.6",
+    "postcss": "^8.3.2",
+    "tailwindcss": "^2.1.4"
   }
 }
