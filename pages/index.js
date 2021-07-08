@@ -28,7 +28,7 @@ async function fetchData() {
     .toPromise()
     .then(async result => {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
-        const meta = await (await fetch(token.metadataURI)).jsn() // ipfs link
+        const meta = await (await fetch(token.metadataURI)).json() // ipfs link
   
 
         // add a service to add this to a image specific CDN
