@@ -2,16 +2,14 @@ import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
 import Image from 'next/image'
-import cloudinary from 'cloudinary';
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
 })
 
-// send url to cloudinary
-async function sendToCloudinary(url, tokenID) {
-  const result = await cloudinary.v2.uploader.upload(url, { public_id: tokenID })
-  return result.url
+// replace IPFS URL with cloudinary link
+async function replaceWithCloudflareCDN(ipfsURL) {
+  return ipfsURL.replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
 }
 
 const query = `
@@ -37,7 +35,7 @@ async function fetchData() {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
         const meta = await (await fetch(token.metadataURI)).json() // ipfs link
         
-        // console.log(" meta: ", meta)
+        console.log(" meta: ", meta)
         if (meta.mimeType === 'video/mp4') {
           token.type = 'video'
           token.meta = meta
@@ -49,13 +47,7 @@ async function fetchData() {
         else {
           token.type = 'image'
           token.meta = meta
-          try {
-            token.meta.url = await sendToCloudinary(token.contentURI, token.tokenID)
-          } catch (e) {
-            console.log(e)
-          }
         }
-        // console.log(token)
         return token
       }))
       console.log(tokenData)
@@ -73,29 +65,24 @@ export default function Home(props) {
     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  ">
       {
         props.tokens.map(token => {
-          return (
-            <div key={token.contentURI} style={{
+          return token.type !== 'image' ? null :
+            <div key={replaceWithCloudflareCDN(token.contentURI)} style={{
               padding: '20px 0px'
             }}>
-              {
-                token.type === 'image' && (
-                  <Card
-                    key={token.contentURI}
-                    title={token.meta.name}
-                    description={token.meta.description}>
-                    <Image
-                      className="rounded-t-xl h-96"
-                      src={token.meta.url || token.contentURI}
-                      alt={`nft-${token.meta.name}`}
-                      width={500}
-                      height={500}
-                      quality={75}
-                    />
-                  </Card>
-                )
-              }
-            </div>
-          )
+              <Card
+                key={token.contentURI}
+                title={token.meta.name}
+                description={token.meta.description}>
+                <Image
+                  className="rounded-t-xl h-96"
+                  src={token.meta.url || token.contentURI}
+                  alt={`nft-${token.meta.name}`}
+                  width={500}
+                  height={500}
+                  quality={75}
+                />
+              </Card>
+          </div>
         })
       }
     </div>
