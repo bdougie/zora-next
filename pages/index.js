@@ -2,10 +2,17 @@ import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
 import Image from 'next/image'
+var cloudinary = require('cloudinary').v2;
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
 })
+
+// send url to cloudinary
+async function sendToCloudinary(url, tokenID) {
+  const result = await cloudinary.uploader.upload(url, { public_id: tokenID })
+  return result.url
+}
 
 const query = `
   query {
@@ -29,14 +36,8 @@ async function fetchData() {
     .then(async result => {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
         const meta = await (await fetch(token.metadataURI)).json() // ipfs link
-  
-
-        // add a service to add this to a image specific CDN
-        // params: {image, tokenID}
-        // sendToCDN(contentURI, tokenID)
-        // return CDN URL
-        //
-        console.log(" meta: ", meta)
+        
+        // console.log(" meta: ", meta)
         if (meta.mimeType === 'video/mp4') {
           token.type = 'video'
           token.meta = meta
@@ -48,10 +49,19 @@ async function fetchData() {
         else {
           token.type = 'image'
           token.meta = meta
+          // try {
+          //   token.meta.url = await sendToCloudinary(token.contentURI, token.tokenID)
+          // } catch (e) {
+          //   console.log(e)
+          // }
         }
+        // console.log(token)
         return token
       }))
+      console.log(tokenData)
       return tokenData
+    }).catch(err => {
+      console.log(err)
     })
   return data
 }
@@ -75,37 +85,12 @@ export default function Home(props) {
                     description={token.meta.description}>
                     <Image
                       className="rounded-t-xl h-96"
-                      src={token.contentURI}
+                      src={token.meta.url || token.contentURI}
                       alt={`nft-${token.meta.name}`}
                       width={500}
                       height={500}
+                      quality={75}
                     />
-                  </Card>
-                )
-              }
-              {
-                token.type === 'video' && (
-                  <Card
-                    key={token.contentURI}
-                    title={token.meta.name}
-                    description={token.meta.description}>
-                    <video alt="nft-video" width="600" controls autoPlay>
-                      <source src={token.contentURI} />
-                    </video>
-                  </Card>
-                )
-              }
-              {
-                token.type === 'audio' && (
-                  <Card
-                    key={token.contentURI}
-                    title={token.meta.name}
-                    description={token.meta.description}>
-                    <audio alt="nft-video" controls>
-                      <source src={token.contentURI} type="audio/ogg" />
-                      <source src={token.contentURI} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                    </audio>
                   </Card>
                 )
               }
