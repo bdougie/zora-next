@@ -2,7 +2,7 @@ import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
 import Image from 'next/image'
-var cloudinary = require('cloudinary').v2;
+import cloudinary from 'cloudinary';
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
@@ -10,7 +10,7 @@ const client = createClient({
 
 // send url to cloudinary
 async function sendToCloudinary(url, tokenID) {
-  const result = await cloudinary.uploader.upload(url, { public_id: tokenID })
+  const result = await cloudinary.v2.uploader.upload(url, { public_id: tokenID })
   return result.url
 }
 
@@ -49,11 +49,11 @@ async function fetchData() {
         else {
           token.type = 'image'
           token.meta = meta
-          // try {
-          //   token.meta.url = await sendToCloudinary(token.contentURI, token.tokenID)
-          // } catch (e) {
-          //   console.log(e)
-          // }
+          try {
+            token.meta.url = await sendToCloudinary(token.contentURI, token.tokenID)
+          } catch (e) {
+            console.log(e)
+          }
         }
         // console.log(token)
         return token
