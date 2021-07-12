@@ -2,15 +2,11 @@ import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
 import Image from 'next/image'
+import styles from '../styles/Home.module.css'
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
 })
-
-// replace IPFS URL with cloudinary link
-async function replaceWithCloudflareCDN(ipfsURL) {
-  return ipfsURL.replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
-}
 
 const query = `
   query {
@@ -27,20 +23,27 @@ const query = `
   }
 `
 
+// replace IPFS URL with cloudinary link
+async function replaceWithCloudflareCDN(ipfsURL) {
+  return ipfsURL.replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
+}
+
 async function fetchData() {
   const data = await client
     .query(query)
     .toPromise()
     .then(async result => {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
-        const meta = await (await fetch(token.metadataURI)).json() // ipfs link
-        
+        const meta = await (await fetch(token.metadataURI)).json().catch(err => {
+          console.log(err)
+          return {}
+        })
         console.log(" meta: ", meta)
-        if (meta.mimeType === 'video/mp4') {
+        if (meta && meta.mimeType === 'video/mp4') {
           token.type = 'video'
           token.meta = meta
         }
-        else if (meta.body && meta.body.mimeType === 'audio/wav') {
+        else if (meta && meta.body && meta.body.mimeType === 'audio/wav') {
           token.type = 'audio'
           token.meta = meta.body
         }
@@ -50,10 +53,7 @@ async function fetchData() {
         }
         return token
       }))
-      console.log(tokenData)
       return tokenData
-    }).catch(err => {
-      console.log(err)
     })
   return data
 }
@@ -65,6 +65,7 @@ export default function Home(props) {
     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  ">
       {
         props.tokens.map(token => {
+          console.log(token.type)
           return token.type !== 'image' ? null :
             <div key={replaceWithCloudflareCDN(token.contentURI)} style={{
               padding: '20px 0px'
@@ -96,13 +97,10 @@ export default function Home(props) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-      </main>
+      ...Loading
     </div>
   )
+
 }
 
 export async function getServerSideProps() {

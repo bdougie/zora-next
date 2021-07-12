@@ -1,5 +1,4 @@
 import React from "react"
-// need to add countdown
 
 const Card = ({ title, description, children }) => {
   return (
