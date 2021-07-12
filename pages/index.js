@@ -1,5 +1,8 @@
 import React from 'react'
+import Card from '../components/Card.js'
 import { createClient } from 'urql'
+import Image from 'next/image'
+import styles from '../styles/Home.module.css'
 
 const client = createClient({
   url: 'https://api.thegraph.com/subgraphs/name/dabit3/zoranftsubgraph'
@@ -20,19 +23,27 @@ const query = `
   }
 `
 
+// replace IPFS URL with cloudinary link
+async function replaceWithCloudflareCDN(ipfsURL) {
+  return ipfsURL.replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
+}
+
 async function fetchData() {
   const data = await client
     .query(query)
     .toPromise()
     .then(async result => {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
-        const meta = await (await fetch(token.metadataURI)).json()
+        const meta = await (await fetch(token.metadataURI)).json().catch(err => {
+          console.log(err)
+          return {}
+        })
         console.log(" meta: ", meta)
-        if (meta.mimeType === 'video/mp4') {
+        if (meta && meta.mimeType === 'video/mp4') {
           token.type = 'video'
           token.meta = meta
         }
-        else if (meta.body && meta.body.mimeType === 'audio/wav') {
+        else if (meta && meta.body && meta.body.mimeType === 'audio/wav') {
           token.type = 'audio'
           token.meta = meta.body
         }
@@ -50,44 +61,32 @@ async function fetchData() {
 
 export default function Home(props) {
   if (props.tokens && props.tokens.length) return (
-    <div style={{width: 600, margin: '0 auto'}}>
+    <div className=" px-6 sm:px-4 mx-auto max-w-lg sm:max-w-2xl md:max-w-full lg:max-w-screen-2xl md:px-8 lg:px-6 lg:py-16">
+    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  ">
       {
         props.tokens.map(token => {
-          return (
-            <div key={token.contentURI} style={{
+          console.log(token.type)
+          return token.type !== 'image' ? null :
+            <div key={replaceWithCloudflareCDN(token.contentURI)} style={{
               padding: '20px 0px'
             }}>
-              {
-                token.type === 'image' && (
-                  <div>
-                    <img style={{width: '600px'}} src={token.contentURI} />
-                  </div>
-                )
-              }
-              {
-                token.type === 'video' && (
-                  <div>
-                    <video width="600" height="auto" controls autoPlay>
-                      <source src={token.contentURI} />
-                    </video>
-                  </div>
-                )
-              }
-              {
-                token.type === 'audio' && (
-                  <audio controls>
-                    <source src={token.contentURI} type="audio/ogg" />
-                    <source src={token.contentURI} type="audio/mpeg" />
-                   Your browser does not support the audio element.
-                  </audio>
-                )
-              }
-              <h3 style={{ margin: '8px 0px', fontSize: '22px'}}>{token.meta.name}</h3>
-              <p >{token.meta.description}</p>
-            </div>
-          )
+              <Card
+                key={token.contentURI}
+                title={token.meta.name}
+                description={token.meta.description}>
+                <Image
+                  className="rounded-t-xl h-96"
+                  src={token.meta.url || token.contentURI}
+                  alt={`nft-${token.meta.name}`}
+                  width={500}
+                  height={500}
+                  quality={75}
+                />
+              </Card>
+          </div>
         })
       }
+    </div>
     </div>
   )
   return (
@@ -98,13 +97,10 @@ export default function Home(props) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-      </main>
+      ...Loading
     </div>
   )
+
 }
 
 export async function getServerSideProps() {
