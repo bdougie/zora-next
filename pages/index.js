@@ -2,6 +2,7 @@ import React from 'react'
 import Card from '../components/Card.js'
 import { createClient } from 'urql'
 import Image from 'next/image'
+import Head from 'next/head'
 import styles from '../styles/Home.module.css'
 
 const client = createClient({
@@ -24,8 +25,9 @@ const query = `
 `
 
 // replace IPFS URL with cloudinary link
-async function replaceWithCloudflareCDN(ipfsURL) {
-  return ipfsURL.replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
+function replaceWithCloudflareCDN(ipfsURL) {
+  return ipfsURL.replace(/^ipfs:\/\//,'https://cloudflare-ipfs.com/ipfs/')
+    .replace(/ipfs.fleek.co/, 'cloudflare-ipfs.com')
 }
 
 async function fetchData() {
@@ -34,11 +36,13 @@ async function fetchData() {
     .toPromise()
     .then(async result => {
       const tokenData = await Promise.all(result.data.tokens.map(async token => {
+        token.metadataURI = replaceWithCloudflareCDN(token.metadataURI)
         const meta = await (await fetch(token.metadataURI)).json().catch(err => {
           console.log(err)
           return {}
         })
         console.log(" meta: ", meta)
+        token.contentURI = replaceWithCloudflareCDN(token.contentURI)
         if (meta && meta.mimeType === 'video/mp4') {
           token.type = 'video'
           token.meta = meta
@@ -67,7 +71,7 @@ export default function Home(props) {
         props.tokens.map(token => {
           console.log(token.type)
           return token.type !== 'image' ? null :
-            <div key={replaceWithCloudflareCDN(token.contentURI)} style={{
+            <div key={token.contentURI} style={{
               padding: '20px 0px'
             }}>
               <Card
